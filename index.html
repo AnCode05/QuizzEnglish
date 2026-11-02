@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz học tập · Ôn tập kiến thức</title>
+<style>
+  :root{
+    --bg:#f2f5fb;
+    --card:#ffffff;
+    --text:#16203a;
+    --muted:#6b7794;
+    --border:#e3e8f2;
+    --opt-bg:#ffffff;
+    --primary:#5b8cff;
+    --primary-2:#7c4dff;
+    --ok:#16a34a;
+    --ok-bg:#e8f8ee;
+    --bad:#e5484d;
+    --bad-bg:#fdecec;
+    --hint:#b8860b;
+    --hint-bg:#fff8e1;
+    --shadow:0 10px 30px rgba(28,45,90,.08);
+    --shadow-sm:0 4px 14px rgba(28,45,90,.06);
+  }
+  [data-theme="dark"]{
+    --bg:#0e1320;
+    --card:#161c2c;
+    --text:#e8edf8;
+    --muted:#94a1bd;
+    --border:#26304a;
+    --opt-bg:#1b2334;
+    --primary:#6f9bff;
+    --primary-2:#a07cff;
+    --ok:#3ddc84;
+    --ok-bg:#12281c;
+    --bad:#ff6b6b;
+    --bad-bg:#2a1518;
+    --hint:#ffd166;
+    --hint-bg:#2a2415;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+    --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    padding:22px 16px 70px;
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    transition:background .3s ease,color .3s ease;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(620px 420px at 8% -8%, rgba(91,140,255,.28), transparent 62%),
+      radial-gradient(620px 420px at 102% 2%, rgba(124,77,255,.22), transparent 62%);
+  }
+
+  .app{max-width:880px;margin:0 auto}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;margin-bottom:22px;padding:15px 18px;
+    background:color-mix(in srgb,var(--card) 78%,transparent);
+    border:1px solid color-mix(in srgb,var(--border) 82%,transparent);
+    border-radius:20px;box-shadow:var(--shadow-sm);
+    backdrop-filter:blur(14px);
+  }
+  .brand{display:flex;align-items:center;gap:13px}
+  .brand-copy{display:flex;flex-direction:column;gap:3px}
+  .eyebrow{font-size:.66rem;font-weight:800;letter-spacing:1.35px;color:var(--primary);text-transform:uppercase}
+  .brand p{margin:0;font-size:.8rem;color:var(--muted);font-weight:500}
+  .brand h1{
+    margin:0;font-size:1.22rem;letter-spacing:-.4px;font-weight:800;
+    background:linear-gradient(100deg,var(--primary),var(--primary-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .logo{width:48px;height:48px;flex:0 0 48px;filter:drop-shadow(0 6px 14px rgba(91,140,255,.35))}
+
+  .theme-btn{
+    width:46px;height:46px;border-radius:14px;border:1px solid var(--border);
+    background:var(--card);color:var(--text);cursor:pointer;
+    display:grid;place-items:center;box-shadow:var(--shadow-sm);
+    transition:transform .18s ease,border-color .18s ease,background .3s;
+  }
+  .theme-btn:hover{transform:translateY(-2px) rotate(-6deg);border-color:var(--primary)}
+  .theme-btn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  [data-theme="light"] .i-sun{display:none}
+  [data-theme="dark"]  .i-moon{display:none}
+
+  /* ---------- Stats ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;
+  }
+  .stat{
+    background:color-mix(in srgb,var(--card) 92%,var(--primary) 8%);
+    border:1px solid var(--border);border-radius:17px;
+    padding:13px 16px;display:flex;align-items:center;gap:11px;
+    box-shadow:var(--shadow-sm);transition:background .3s,border-color .3s,transform .2s;
+  }
+  .stat:hover{transform:translateY(-2px)}
+  .stat .dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+  .stat.ok .dot{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 18%,transparent)}
+  .stat.bad .dot{background:var(--bad);box-shadow:0 0 0 4px color-mix(in srgb,var(--bad) 18%,transparent)}
+  .stat.idx .dot{background:var(--primary);box-shadow:0 0 0 4px color-mix(in srgb,var(--primary) 18%,transparent)}
+  .stat b{display:block;font-size:1.05rem;line-height:1.1}
+  .stat small{color:var(--muted);font-size:.72rem;font-weight:600;letter-spacing:.3px}
+
+  .progress{
+    height:9px;border-radius:99px;background:var(--border);overflow:hidden;margin-bottom:22px;
+    box-shadow:inset 0 1px 2px rgba(20,30,60,.08);
+  }
+  .progress .bar{
+    height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--primary),var(--primary-2));
+    transition:width .45s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ---------- Card ---------- */
+  .card{
+    position:relative;overflow:hidden;
+    background:var(--card);border:1px solid var(--border);border-radius:24px;
+    padding:30px 30px 25px;box-shadow:var(--shadow);
+    transition:background .3s,border-color .3s;
+    animation:pop .34s cubic-bezier(.2,.8,.3,1);
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:30px;right:30px;height:3px;
+    border-radius:0 0 8px 8px;background:linear-gradient(90deg,var(--primary),var(--primary-2));
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  .qtext{
+    margin:0 0 18px;font-size:1.12rem;line-height:1.55;font-weight:700;letter-spacing:-.2px;
+  }
+
+  .options{display:flex;flex-direction:column;gap:11px}
+  .option{
+    display:flex;align-items:flex-start;gap:13px;width:100%;text-align:left;
+    padding:14px 16px;border-radius:15px;cursor:pointer;
+    font:inherit;font-size:.96rem;line-height:1.5;color:var(--text);
+    background:var(--opt-bg);border:1.6px solid var(--border);
+    transition:border-color .16s,transform .16s,box-shadow .16s,background .25s,color .25s;
+  }
+  .option:hover:not(:disabled){
+    border-color:var(--primary);transform:translateY(-2px);
+    box-shadow:0 8px 20px color-mix(in srgb,var(--primary) 22%,transparent);
+  }
+  :where(button):focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 70%,white);outline-offset:3px}
+  .option:disabled{cursor:default}
+  .badge{
+    flex:0 0 27px;width:27px;height:27px;border-radius:9px;display:grid;place-items:center;
+    font-size:.8rem;font-weight:800;color:var(--muted);
+    background:color-mix(in srgb,var(--muted) 13%,transparent);
+    transition:background .2s,color .2s;
+  }
+  .option.correct{border-color:var(--ok);background:var(--ok-bg)}
+  .option.correct .badge{background:var(--ok);color:#fff}
+  .option.wrong{border-color:var(--bad);background:var(--bad-bg)}
+  .option.wrong .badge{background:var(--bad);color:#fff}
+  .option.dim{opacity:.55}
+
+  /* ---------- Hint ---------- */
+  .hint-wrap{margin-top:16px}
+  .hint-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 16px;border-radius:12px;cursor:pointer;
+    font:inherit;font-size:.86rem;font-weight:700;letter-spacing:.2px;
+    color:var(--hint);background:var(--hint-bg);
+    border:1.4px dashed color-mix(in srgb,var(--hint) 55%,transparent);
+    transition:transform .16s,box-shadow .16s,opacity .2s;
+  }
+  .hint-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb,var(--hint) 25%,transparent)}
+  .hint-btn .bulb{font-size:1rem;line-height:1}
+  .hint-content{
+    margin-top:10px;padding:13px 16px;border-radius:13px;
+    font-size:.9rem;line-height:1.55;font-weight:500;
+    color:var(--text);background:var(--hint-bg);
+    border:1px solid color-mix(in srgb,var(--hint) 40%,transparent);
+    animation:pop .28s ease;
+  }
+  .hint-content strong{color:var(--hint)}
+  [hidden]{display:none !important}
+
+  /* ---------- Feedback ---------- */
+  .feedback{
+    margin-top:16px;padding:13px 16px;border-radius:14px;font-size:.9rem;
+    font-weight:600;display:none;animation:pop .28s ease;
+  }
+  .feedback.show{display:block}
+  .feedback.ok{background:var(--ok-bg);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent)}
+  .feedback.bad{background:var(--bad-bg);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent)}
+
+  /* ---------- Buttons ---------- */
+  .actions{display:flex;justify-content:flex-end;margin-top:18px}
+  .btn{
+    border:none;cursor:pointer;font:inherit;font-weight:700;font-size:.94rem;
+    padding:13px 26px;border-radius:14px;color:#fff;
+    background:linear-gradient(100deg,var(--primary),var(--primary-2));
+    box-shadow:0 10px 22px color-mix(in srgb,var(--primary) 38%,transparent);
+    transition:transform .16s,box-shadow .16s,opacity .2s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 28px color-mix(in srgb,var(--primary) 46%,transparent)}
+  .btn:active{transform:translateY(0)}
+  .btn[hidden]{display:none}
+
+  /* ---------- Result ---------- */
+  .result{text-align:center;padding:8px 0 4px;animation:pop .4s ease}
+  .ring{
+    width:170px;height:170px;border-radius:50%;margin:6px auto 20px;
+    display:grid;place-items:center;
+    background:conic-gradient(var(--ok) calc(var(--p) * 1%), var(--border) 0);
+    transition:background .6s ease;
+  }
+  .ring-in{
+    width:132px;height:132px;border-radius:50%;background:var(--card);
+    display:grid;place-items:center;align-content:center;gap:2px;
+    box-shadow:inset 0 0 0 1px var(--border);
+  }
+  .ring-in b{font-size:2rem;line-height:1;letter-spacing:-1px}
+  .ring-in small{font-size:.72rem;color:var(--muted);font-weight:700;letter-spacing:.6px}
+  .result h2{margin:0 0 8px;font-size:1.35rem;letter-spacing:-.4px}
+  .result p{margin:0 0 20px;color:var(--muted);font-size:.94rem}
+  .result .pills{display:flex;justify-content:center;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  .pill{
+    padding:9px 16px;border-radius:12px;font-size:.85rem;font-weight:700;
+    border:1px solid var(--border);background:var(--opt-bg);
+  }
+  .pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+
+  @media (max-width:560px){
+    body{padding:12px 12px 42px}
+    .topbar{padding:12px 13px;border-radius:17px;margin-bottom:16px}
+    .card{padding:23px 17px 18px;border-radius:19px}
+    .card::before{left:18px;right:18px}
+    .qtext{font-size:1.02rem}
+    .option{font-size:.9rem;padding:12px 13px}
+    .stat{padding:9px 10px;gap:8px}
+    .stat b{font-size:.95rem}
+    .stat small{font-size:.66rem}
+    .brand h1{font-size:1.02rem}
+    .logo{width:42px;height:42px;flex-basis:42px}
+    .theme-btn{width:42px;height:42px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== Header ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5b8cff"/>
+            <stop offset="1" stop-color="#7c4dff"/>
+          </linearGradient>
+        </defs>
+        <rect width="48" height="48" rx="14" fill="url(#lg)"/>
+        <path d="M24 17c-4.2-3.3-9-3.2-13-.8v17c4-2.4 8.8-2.5 13 .8 4.2-3.3 9-3.2 13-.8v-17c-4-2.4-8.8-2.5-13 .8Z"
+              fill="none" stroke="#fff" stroke-width="2.3" stroke-linejoin="round"/>
+        <path d="M24 17v17" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/>
+        <path d="M15.5 21.5c2-.7 4.2-.5 6 .3M32.5 21.5c-2-.7-4.2-.5-6 .3"
+              fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <span class="eyebrow">Không gian học tập</span>
+        <h1>Quiz học tập</h1>
+        <p>Ôn tập kiến thức Tiếng Anh · 33 câu hỏi</p>
+      </div>
+    </div>
+
+    <button class="theme-btn" id="themeBtn" title="Chuyển chế độ sáng / tối" aria-label="Đổi giao diện">
+      <svg class="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </header>
+
+  <!-- ===== Status bar ===== -->
+  <section class="stats">
+    <div class="stat ok"><span class="dot"></span><div><b id="sCorrect">0</b><small>ĐÚNG</small></div></div>
+    <div class="stat bad"><span class="dot"></span><div><b id="sWrong">0</b><small>SAI</small></div></div>
+    <div class="stat idx"><span class="dot"></span><div><b id="sIndex">1/33</b><small>CÂU HỎI</small></div></div>
+  </section>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+
+  <!-- ===== Quiz card ===== -->
+  <main class="card" id="card"></main>
+</div>
+
+<script>
+/* =========================================================
+   DỮ LIỆU CÂU HỎI  (c: chỉ số đáp án đúng trong mảng gốc,
+                     hint: gợi ý hiển thị khi bấm nút)
+   ========================================================= */
+const QUESTIONS = [
+  {
+    "q": "Question 23: Modern urban infrastructure development has a strong ______ the overall living standards of city dwellers.",
+    "a": ["impact on", "footprint on", "curfew on", "expectation on"],
+    "c": 0,
+    "hint": "Use the collocation 'have a strong impact on' meaning to strongly affect something."
+  },
+  {
+    "q": "Question 24: Students need to learn effective time-management skills to ______ academic pressure during exams.",
+    "a": ["work out", "give off", "cope with", "follow in"],
+    "c": 2,
+    "hint": "'Cope with' means to deal successfully with a difficult situation or pressure."
+  },
+  {
+    "q": "Question 25: Weather forecasts routinely ______ citizens ______ upcoming heavy rain and urban flooding.",
+    "a": ["warn / of", "provide / to", "pay / to", "cut / down"],
+    "c": 0,
+    "hint": "Use 'warn somebody of something' to say that someone is told about a possible danger."
+  },
+  {
+    "q": "Question 26: Free Wi-Fi networks will be ______ all visitors in the smart pedestrian zone.",
+    "a": ["suitable for", "available for", "aware of", "famous for"],
+    "c": 1,
+    "hint": "'Available for' means able to be used or obtained by someone."
+  },
+  {
+    "q": "Question 27: The aid organization will ______ food and medical supplies ______ victims of the natural disaster.",
+    "a": ["provide / to", "argue / over", "warn / of", "follow / in"],
+    "c": 0,
+    "hint": "Use 'provide something to somebody' when giving supplies or help to people."
+  },
+  {
+    "q": "Question 28: You should ______ your screen time at night to prevent eye strain and sleep disruption.",
+    "a": ["give off", "cut down on", "pay attention to", "work out"],
+    "c": 1,
+    "hint": "'Cut down on' means to reduce the amount of something you use or do."
+  },
+  {
+    "q": "Question 1: Medical advancements and healthier lifestyles have contributed to a significant increase in human life ______ over the past few decades.",
+    "a": ["expectancy", "gap", "view", "room"],
+    "c": 0,
+    "hint": "The common collocation is 'life expectancy', meaning the average length of life."
+  },
+  {
+    "q": "Question 2: To build muscle strength and maintain a healthy body, doctors advise everyone to ______ regular exercise.",
+    "a": ["make", "take", "hold", "pay"],
+    "c": 1,
+    "hint": "Use 'take regular exercise' as a fixed collocation."
+  },
+  {
+    "q": "Question 3: Differences in mindsets, values, and technology usage between parents and children often create a severe generation ______ within modern families.",
+    "a": ["gap", "room", "view", "footprint"],
+    "c": 0,
+    "hint": "The common phrase is 'generation gap', meaning differences between generations."
+  },
+  {
+    "q": "Question 4: Older generations often ______ traditional views regarding career choices, gender roles, and family responsibilities.",
+    "a": ["hold", "take", "make", "give"],
+    "c": 0,
+    "hint": "Use 'hold views' to mean to have or maintain particular opinions."
+  },
+  {
+    "q": "Question 5: Children who have a balanced diet and get enough sleep every night are usually full of ______ throughout the day.",
+    "a": ["energy", "power", "strength", "force"],
+    "c": 0,
+    "hint": "'Full of energy' means very active and not tired."
+  },
+  {
+    "q": "Question 6: In future smart cities, old structures will be demolished to ______ room for eco-friendly parks and modern public transport systems.",
+    "a": ["make", "take", "hold", "give"],
+    "c": 0,
+    "hint": "Use 'make room for' meaning to create space for something."
+  },
+  {
+    "q": "Question 7: The natural reserve area is ______ to hundreds of endangered species of animals and rare plants.",
+    "a": ["home", "room", "view", "house"],
+    "c": 0,
+    "hint": "Use 'be home to' to mean a place where many animals or plants live."
+  },
+  {
+    "q": "Fill-in: My mother (cook) ______ a delicious dinner for our family yesterday.",
+    "a": [],
+    "c": "cooked",
+    "hint": "Use the past simple because 'yesterday' indicates a finished past action."
+  },
+  {
+    "q": "Fill-in: They (move) ______ to a new house in the city centre last year.",
+    "a": [],
+    "c": "moved",
+    "hint": "Use the past simple with the time phrase 'last year'."
+  },
+  {
+    "q": "Fill-in: My father (practice) ______ yoga every morning since 2020.",
+    "a": [],
+    "c": "has practiced",
+    "hint": "Use the present perfect with 'since' for an action continuing from the past to now."
+  },
+  {
+    "q": "Fill-in: We (not finish) ______ our science project yet.",
+    "a": [],
+    "c": "haven't finished",
+    "hint": "Use the present perfect negative with 'yet'."
+  },
+  {
+    "q": "Fill-in: Alexander Fleming (discover) ______ penicillin in 1928, which saved millions of lives.",
+    "a": [],
+    "c": "discovered",
+    "hint": "Use the past simple for a completed action in a specific past year."
+  },
+  {
+    "q": "Fill-in: Dr. Quan (examine) ______ hundreds of patients since he started working at this hospital.",
+    "a": [],
+    "c": "has examined",
+    "hint": "Use the present perfect with 'since' to show an action continuing up to now."
+  },
+  {
+    "q": "Fill-in: Older people in my family often hold traditional (tradition) ______ views about family roles and responsibilities.",
+    "a": [],
+    "c": "traditional",
+    "hint": "Use the adjective form of 'tradition' to modify 'views'."
+  },
+  {
+    "q": "Fill-in: Differences in lifestyle and technology usage often cause generational (generation) ______ conflict between family members.",
+    "a": [],
+    "c": "generational",
+    "hint": "Use the adjective form of 'generation' to modify 'conflict'."
+  },
+  {
+    "q": "Fill-in: Respecting elders is an important cultural (culture) ______ value in many Asian countries.",
+    "a": [],
+    "c": "cultural",
+    "hint": "Use the adjective form of 'culture' to modify 'value'."
+  },
+  {
+    "q": "Question 1: To stay fit, you should work ______ at the gym at least three times a week.",
+    "a": ["out", "up", "off", "in"],
+    "c": 0,
+    "hint": "Use the phrasal verb 'work out' meaning to exercise."
+  },
+  {
+    "q": "Question 2: Bad habits like smoking or staying up late are very hard to give ______.",
+    "a": ["off", "in", "up", "down"],
+    "c": 2,
+    "hint": "'Give up' means to stop doing something, especially a bad habit."
+  },
+  {
+    "q": "Question 3: Drivers must pay attention ______ road signs while driving to ensure safety.",
+    "a": ["with", "to", "for", "on"],
+    "c": 1,
+    "hint": "Use 'pay attention to' as a fixed collocation."
+  },
+  {
+    "q": "Question 4: To begin ______, stand upright with your feet together and keep your back straight.",
+    "a": ["with", "on", "at", "in"],
+    "c": 0,
+    "hint": "Use 'to begin with' to introduce the first step or point."
+  },
+  {
+    "q": "Question 5: This green smoothie recipe is suitable ______ people who are on a balanced diet.",
+    "a": ["to", "with", "for", "about"],
+    "c": 2,
+    "hint": "Use 'suitable for' to mean right or appropriate for someone or something."
+  },
+  {
+    "q": "Question 6: Smartphone screens can give ______ harmful blue light that affects your sleep quality.",
+    "a": ["up", "off", "down", "in"],
+    "c": 1,
+    "hint": "'Give off' means to produce or send out light, heat, gas, or smell."
+  },
+  {
+    "q": "Question 7: Teenagers often argue ______ small things with their parents due to the generation gap.",
+    "a": ["over", "in", "with", "to"],
+    "c": 0,
+    "hint": "Use 'argue over' to mean to disagree or fight about something."
+  },
+  {
+    "q": "Question 8: Mai's parents never force her to follow ______ their footsteps when choosing a career path.",
+    "a": ["on", "over", "with", "in"],
+    "c": 3,
+    "hint": "Use 'follow in somebody's footsteps' meaning to do the same job or follow the same path."
+  },
+  {
+    "q": "Question 9: Prolonged stress and lack of sleep can have a negative impact ______ your immune system.",
+    "a": ["on", "at", "in", "for"],
+    "c": 0,
+    "hint": "Use 'have an impact on' as a fixed collocation."
+  },
+  {
+    "q": "Question 10: Modern city dwellers have to cope ______ high levels of daily work stress and noise pollution.",
+    "a": ["on", "with", "for", "about"],
+    "c": 1,
+    "hint": "Use 'cope with' meaning to deal with a difficult situation."
+  },
+  {
+    "q": "Question 11: The doctor warned the patient ______ the danger of eating too much fast food.",
+    "a": ["of", "for", "to", "with"],
+    "c": 0,
+    "hint": "Use 'warn somebody of something' to tell someone about a danger."
+  },
+  {
+    "q": "Question 12: Tickets for the summer concert are now available ______ purchase on the official website.",
+    "a": ["with", "to", "for", "in"],
+    "c": 2,
+    "hint": "Use 'available for purchase' to mean able to be bought."
+  },
+  {
+    "q": "Question 13: The local government plans to provide clean water ______ rural residents next year.",
+    "a": ["with", "to", "for", "on"],
+    "c": 1,
+    "hint": "Use 'provide something to somebody' when giving something to people."
+  },
+  {
+    "q": "Question 14: Doctors advise people to cut ______ on sugar and soft drinks to avoid diabetes.",
+    "a": ["down", "off", "up", "in"],
+    "c": 0,
+    "hint": "Use 'cut down on' to mean reduce the amount of something."
+  },
+  {
+    "q": "Question 15: You don't need expensive equipment to stay healthy; you can simply ______ in your room every morning.",
+    "a": ["work out", "give up", "cope with", "give off"],
+    "c": 0,
+    "hint": "'Work out' means to exercise, often indoors or at a gym."
+  },
+  {
+    "q": "Question 16: After suffering from severe health problems, he decided to ______ smoking completely.",
+    "a": ["cut down on", "give up", "pay attention to", "argue over"],
+    "c": 1,
+    "hint": "'Give up' means to stop doing something completely."
+  },
+  {
+    "q": "Question 17: If you want to understand the lesson clearly, you must ______ what the teacher is explaining.",
+    "a": ["follow in", "cope with", "pay attention to", "warn of"],
+    "c": 2,
+    "hint": "Use 'pay attention to' meaning to listen or watch carefully."
+  },
+  {
+    "q": "Question 18: ______, push back to your starting position before repeating the exercise movement.",
+    "a": ["Suitable for", "To begin with", "Impact on", "Available for"],
+    "c": 1,
+    "hint": "'To begin with' is used to introduce the first step in instructions."
+  },
+  {
+    "q": "Question 19: Yoga is a gentle exercise that is ______ elderly people who want to improve their flexibility.",
+    "a": ["available for", "suitable for", "full of", "aware of"],
+    "c": 1,
+    "hint": "Use 'suitable for' to say something is appropriate for a person or group."
+  },
+  {
+    "q": "Question 20: Chemical factories in the suburban area ______ toxic gases that pollute the surrounding air.",
+    "a": ["give off", "give up", "cut down on", "work out"],
+    "c": 0,
+    "hint": "'Give off' means to produce and release gas, smoke, heat, or light."
+  },
+  {
+    "q": "Question 21: It is not necessary for family members to ______ minor issues like daily chores.",
+    "a": ["cope with", "follow in", "argue over", "provide to"],
+    "c": 2,
+    "hint": "'Argue over' means to disagree or quarrel about something."
+  },
+  {
+    "q": "Question 22: He chose to become a doctor to ______ his father's footsteps and help sick people.",
+    "a": ["pay attention to", "follow in", "cut down on", "warn of"],
+    "c": 1,
+    "hint": "Use 'follow in somebody's footsteps' meaning to do the same job as someone before you."
+  },
+  {
+    "q": "Question 1: Eating a ______ diet with enough vegetables and fruits is essential for maintaining good health.",
+    "a": ["balanced", "curious", "efficient", "private"],
+    "c": 0,
+    "hint": "A 'balanced diet' contains the right amounts of different types of food."
+  },
+  {
+    "q": "Question 2: Regular strength training can significantly increase the power and size of your ______.",
+    "a": ["muscles", "sensors", "infrastructures", "senses"],
+    "c": 0,
+    "hint": "Strength training is exercise that makes your 'muscles' stronger."
+  },
+  {
+    "q": "Question 3: Lifting heavy objects incorrectly can cause severe damage and physical ______.",
+    "a": ["injury", "strength", "health", "fitness"],
+    "c": 0,
+    "hint": "Physical damage to the body is called an 'injury'."
+  },
+  {
+    "q": "Question 4: Many elderly people tend to ______ from joint pain during cold winter days.",
+    "a": ["examine", "suffer", "operate", "hire"],
+    "c": 1,
+    "hint": "Use 'suffer from' to describe experiencing pain or illness."
+  },
+  {
+    "q": "Question 5: The doctor used a stethoscope to ______ the patient's chest and heart rate.",
+    "a": ["experiment", "hire", "examine", "experience"],
+    "c": 2,
+    "hint": "'Examine' means to look at someone or something carefully, especially medically."
+  },
+  {
+    "q": "Question 6: Fresh fruits and vegetables are packed with essential vitamins and ______ that boost our immune system.",
+    "a": ["nutrients", "skyscrapers", "city dwellers", "public transports"],
+    "c": 0,
+    "hint": "'Nutrients' are substances in food that are necessary for health and growth."
+  },
+  {
+    "q": "Question 7: Doing regular cardio workouts is a great way to improve your overall physical ______ and stamina.",
+    "a": ["vehicle", "fitness", "zone", "native"],
+    "c": 1,
+    "hint": "'Physical fitness' means the condition of being healthy and strong."
+  },
+  {
+    "q": "Question 8: Traveling to foreign countries allows young people to gain valuable life ______.",
+    "a": ["experiment", "experience", "nutrient", "strength"],
+    "c": 1,
+    "hint": "'Life experience' refers to knowledge and skills gained from living and doing things."
+  },
+  {
+    "q": "Question 9: Children are naturally ______ about how things work and always ask many questions.",
+    "a": ["efficient", "curious", "private", "public"],
+    "c": 1,
+    "hint": "'Curious about' means eager to know or learn something."
+  },
+  {
+    "q": "Question 10: Scientists often ______ with new chemical formulas in the laboratory to find effective medicines.",
+    "a": ["operate", "examine", "experiment", "suffer"],
+    "c": 2,
+    "hint": "Use 'experiment with' to mean try new ideas or methods in order to test them."
+  },
+  {
+    "q": "Question 11: The tech company decided to ______ three new software engineers to work on the AI project.",
+    "a": ["hire", "suffer", "operate", "experience"],
+    "c": 0,
+    "hint": "'Hire' means to employ someone for a job."
+  },
+  {
+    "q": "Question 12: Teenagers born in the age of smartphones and the internet are often referred to as ______.",
+    "a": ["city dwellers", "digital natives", "pedestrian zones", "high-rise buildings"],
+    "c": 1,
+    "hint": "'Digital natives' are people who have grown up using digital technology."
+  },
+  {
+    "q": "Question 13: Using ______ like buses and subways helps reduce traffic congestion and carbon emissions in big cities.",
+    "a": ["private vehicles", "high-rise buildings", "public transport", "roof gardens"],
+    "c": 2,
+    "hint": "'Public transport' includes buses, trains, and subways used by many people."
+  },
+  {
+    "q": "Question 14: Due to the convenience and comfort, many families prefer driving their own ______ instead of taking the bus.",
+    "a": ["public transport", "private vehicles", "pedestrian zones", "digital natives"],
+    "c": 1,
+    "hint": "'Private vehicles' are cars, motorbikes, etc. owned by individuals, not shared public transport."
+  },
+  {
+    "q": "Question 15: Modern smart cities require advanced ______, including fast digital networks and smart power grids.",
+    "a": ["infrastructure", "strength", "nutrients", "fitness"],
+    "c": 0,
+    "hint": "'Infrastructure' means basic systems and facilities such as roads, networks, and power supplies."
+  },
+  {
+    "q": "Question 16: Due to the lack of ground space in modern metropolises, living in a ______ or a skyscraper has become very common.",
+    "a": ["roof garden", "high-rise building", "pedestrian zone", "sensor"],
+    "c": 1,
+    "hint": "A 'high-rise building' is a tall building with many floors."
+  },
+  {
+    "q": "Question 17: A typical ______ often faces high levels of daily stress due to busy work schedules and traffic noise.",
+    "a": ["city dweller", "digital native", "nutrient", "strength"],
+    "c": 0,
+    "hint": "A 'city dweller' is a person who lives in a city."
+  },
+  {
+    "q": "Question 18: Tokyo is considered a major economic and cultural ______ in East Asia.",
+    "a": ["pedestrian zone", "urban centre", "roof garden", "private vehicle"],
+    "c": 1,
+    "hint": "An 'urban centre' is a main city area where business and culture are concentrated."
+  },
+  {
+    "q": "Question 19: Growing vegetables and flowers on a ______ helps cool down the building and creates green space.",
+    "a": ["high-rise building", "roof garden", "public transport", "digital native"],
+    "c": 1,
+    "hint": "A 'roof garden' is a garden grown on the roof of a building."
+  },
+  {
+    "q": "Question 20: Architects designed a massive glass ______ that dominates the downtown skyline.",
+    "a": ["skyscraper", "pedestrian zone", "nutrient", "vehicle"],
+    "c": 0,
+    "hint": "A 'skyscraper' is a very tall building, often found in city centres."
+  },
+  {
+    "q": "Question 21: Highly automated machinery allows modern smart factories to ______ continuously with minimal human errors.",
+    "a": ["suffer", "examine", "operate", "hire"],
+    "c": 2,
+    "hint": "'Operate' means to work or function, especially for machines or factories."
+  },
+  {
+    "q": "Question 22: Smart traffic control systems make urban transportation much more ______ by minimizing fuel waste and delays.",
+    "a": ["curious", "efficient", "private", "negative"],
+    "c": 1,
+    "hint": "'Efficient' means working well without wasting time, energy, or resources."
+  },
+  {
+    "q": "Question 23: Motion ______ are installed everywhere in smart buildings to detect movement and automatically save electricity.",
+    "a": ["sensors", "nutrients", "muscles", "treatments"],
+    "c": 0,
+    "hint": "'Sensors' are devices that detect and respond to movement, heat, light, etc."
+  },
+  {
+    "q": "Question 24: Expanding the downtown ______ allows citizens to walk and shop safely without worrying about cars or motorbikes.",
+    "a": ["urban centre", "pedestrian zone", "infrastructure", "high-rise building"],
+    "c": 1,
+    "hint": "A 'pedestrian zone' is an area where cars are not allowed and people can walk safely."
+  }
+]
+  ;
+
+/* =========================================================
+   TIỆN ÍCH
+   ========================================================= */
+const LETTERS = ["A","B","C","D","E","F"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* =========================================================
+   TRẠNG THÁI
+   ========================================================= */
+const card       = document.getElementById("card");
+const bar        = document.getElementById("bar");
+const sCorrect   = document.getElementById("sCorrect");
+const sWrong     = document.getElementById("sWrong");
+const sIndex     = document.getElementById("sIndex");
+
+let quiz = [];
+let idx = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+
+/* =========================================================
+   KHỞI TẠO
+   ========================================================= */
+function buildQuiz(){
+  return shuffle(QUESTIONS.map(item => {
+    const opts = item.a.map((text, i) => ({ text, isCorrect: i === item.c }));
+    shuffle(opts);
+    return { question: item.q, opts, hint: item.hint };
+  }));
+}
+
+function start(){
+  quiz = buildQuiz();
+  idx = 0; correct = 0; wrong = 0; answered = false;
+  updateStats();
+  renderQuestion();
+}
+
+/* =========================================================
+   THANH TRẠNG THÁI
+   ========================================================= */
+function updateStats(){
+  sCorrect.textContent = correct;
+  sWrong.textContent   = wrong;
+  sIndex.textContent   = Math.min(idx + 1, quiz.length) + "/" + quiz.length;
+  bar.style.width = ((correct + wrong) / quiz.length * 100) + "%";
+}
+
+/* =========================================================
+   HIỂN THỊ CÂU HỎI
+   ========================================================= */
+function renderQuestion(){
+  answered = false;
+  const q = quiz[idx];
+
+  card.innerHTML = `
+    <h2 class="qtext">${esc(q.question)}</h2>
+    <div class="options" id="options">
+      ${q.opts.map((o, i) => `
+        <button class="option" data-i="${i}">
+          <span class="badge">${LETTERS[i]}</span>
+          <span>${esc(o.text)}</span>
+        </button>`).join("")}
+    </div>
+
+    <div class="hint-wrap">
+      <button class="hint-btn" id="hintBtn" type="button">
+        <span class="bulb">💡</span> Xem gợi ý
+      </button>
+      <div class="hint-content" id="hintContent" hidden>
+        <strong>Gợi ý:</strong> ${esc(q.hint)}
+      </div>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="actions">
+      <button class="btn" id="nextBtn" hidden>
+        ${idx === quiz.length - 1 ? "Xem kết quả 🎉" : "Câu tiếp theo →"}
+      </button>
+    </div>
+  `;
+
+  card.querySelectorAll(".option").forEach(btn => {
+    btn.addEventListener("click", () => choose(parseInt(btn.dataset.i, 10)));
+  });
+
+  const hintBtn = document.getElementById("hintBtn");
+  const hintContent = document.getElementById("hintContent");
+  hintBtn.addEventListener("click", () => {
+    const isHidden = hintContent.hasAttribute("hidden");
+    if (isHidden){
+      hintContent.removeAttribute("hidden");
+      hintBtn.innerHTML = '<span class="bulb">💡</span> Ẩn gợi ý';
+    } else {
+      hintContent.setAttribute("hidden", "");
+      hintBtn.innerHTML = '<span class="bulb">💡</span> Xem gợi ý';
+    }
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", next);
+
+  updateStats();
+  bar.style.width = (idx / quiz.length * 100) + "%";
+}
+
+/* =========================================================
+   CHỌN ĐÁP ÁN
+   ========================================================= */
+function choose(picked){
+  if (answered) return;
+  answered = true;
+
+  const q = quiz[idx];
+  const buttons = [...card.querySelectorAll(".option")];
+  const isRight = q.opts[picked].isCorrect;
+
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (q.opts[i].isCorrect)      btn.classList.add("correct");
+    else if (i === picked)        btn.classList.add("wrong");
+    else                          btn.classList.add("dim");
+  });
+
+  const fb = document.getElementById("feedback");
+  if (isRight){
+    correct++;
+    fb.className = "feedback ok show";
+    fb.textContent = "✅ Chính xác! Làm tốt lắm.";
+  } else {
+    wrong++;
+    const rightText = q.opts.find(o => o.isCorrect).text;
+    fb.className = "feedback bad show";
+    fb.textContent = "❌ Chưa đúng. Đáp án đúng là: " + rightText;
+  }
+
+  document.getElementById("nextBtn").hidden = false;
+  updateStats();
+  bar.style.width = ((correct + wrong) / quiz.length * 100) + "%";
+}
+
+/* =========================================================
+   CÂU TIẾP THEO
+   ========================================================= */
+function next(){
+  idx++;
+  if (idx >= quiz.length) renderResult();
+  else renderQuestion();
+}
+
+/* =========================================================
+   KẾT QUẢ
+   ========================================================= */
+function renderResult(){
+  const total = quiz.length;
+  const pct = Math.round(correct / total * 100);
+
+  let title, msg;
+  if (pct === 100){ title = "Hoàn hảo! 🏆"; msg = "Bạn trả lời đúng toàn bộ " + total + " câu. Quá xuất sắc!"; }
+  else if (pct >= 80){ title = "Rất tốt! 🎯"; msg = "Kiến thức của bạn rất vững, chỉ cần ôn thêm vài câu nữa."; }
+  else if (pct >= 60){ title = "Khá ổn! 👍"; msg = "Bạn đã nắm được phần lớn nội dung, hãy xem lại các câu sai nhé."; }
+  else if (pct >= 40){ title = "Cố gắng thêm! 💪"; msg = "Hãy ôn lại lý thuyết từng bài rồi làm lại bài kiểm tra."; }
+  else { title = "Đừng nản! 🌱"; msg = "Mọi thứ đều bắt đầu từ việc luyện tập. Thử lại lần nữa nhé!"; }
+
+  card.innerHTML = `
+    <div class="result">
+      <div class="ring" style="--p:${pct}">
+        <div class="ring-in"><b>${pct}%</b><small>CHÍNH XÁC</small></div>
+      </div>
+      <h2>${title}</h2>
+      <p>${msg}</p>
+      <div class="pills">
+        <span class="pill ok">✅ Đúng: ${correct}</span>
+        <span class="pill bad">❌ Sai: ${wrong}</span>
+        <span class="pill">📋 Tổng: ${total} câu</span>
+      </div>
+      <button class="btn" id="restartBtn">🔄 Làm lại từ đầu</button>
+    </div>
+  `;
+
+  sIndex.textContent = total + "/" + total;
+  bar.style.width = "100%";
+  document.getElementById("restartBtn").addEventListener("click", start);
+}
+
+/* =========================================================
+   CHẾ ĐỘ SÁNG / TỐI
+   ========================================================= */
+const themeBtn = document.getElementById("themeBtn");
+const root = document.documentElement;
+
+function applyTheme(mode){
+  root.setAttribute("data-theme", mode);
+  try { localStorage.setItem("quiz-theme", mode); } catch(e){}
+}
+
+(function initTheme(){
+  let saved = null;
+  try { saved = localStorage.getItem("quiz-theme"); } catch(e){}
+  if (saved) { applyTheme(saved); return; }
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(prefersDark ? "dark" : "light");
+})();
+
+themeBtn.addEventListener("click", () => {
+  applyTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+
+/* =========================================================
+   PHÍM TẮT
+   ========================================================= */
+document.addEventListener("keydown", e => {
+  if (idx >= quiz.length) return;
+  if (["1","2","3","4"].includes(e.key)){
+    const i = parseInt(e.key, 10) - 1;
+    const btn = card.querySelector(`.option[data-i="${i}"]`);
+    if (btn && !answered) btn.click();
+  }
+  if (e.key === "Enter"){
+    const nb = document.getElementById("nextBtn");
+    if (nb && !nb.hidden) nb.click();
+  }
+});
+
+/* =========================================================
+   BẮT ĐẦU
+   ========================================================= */
+start();
+</script>
+</body>
+</html>
